@@ -6,7 +6,14 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { config as appConfig } from './lib/config';
 
-const PUBLIC_PATHS = ['/login', '/auth/callback', '/about'];
+const PUBLIC_PATHS = ['/', '/login', '/auth/callback', '/about'];
+
+function isPublic(pathname: string): boolean {
+  // '/' must match exactly - a prefix match would also whitelist every other
+  // route, since every path starts with '/'.
+  if (pathname === '/') return true;
+  return PUBLIC_PATHS.slice(1).some((path) => pathname.startsWith(path));
+}
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -28,9 +35,7 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isPublicPath = PUBLIC_PATHS.some((path) => request.nextUrl.pathname.startsWith(path));
-
-  if (!isPublicPath && !user) {
+  if (!isPublic(request.nextUrl.pathname) && !user) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = '/login';
     return NextResponse.redirect(loginUrl);

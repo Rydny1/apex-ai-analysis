@@ -37,6 +37,12 @@ export const config = {
   owner: {
     email: process.env.APEX_OWNER_EMAIL ?? '',
   },
+  // The single account allowed to trigger real (costed) Anthropic runs. Every
+  // other signed-in account is a guest and sees demo data - see
+  // /api/auth/sync-profile and lib/auth-role.ts.
+  admin: {
+    email: process.env.ADMIN_EMAIL ?? '',
+  },
   supabase: {
     url: process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
     anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '',

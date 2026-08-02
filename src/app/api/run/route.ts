@@ -13,6 +13,7 @@ import { NextResponse, after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { runPipeline } from '@/lib/engine/run';
 import { config } from '@/lib/config';
+import { getRole } from '@/lib/auth-role';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export const maxDuration = 300; // 5 minutes - comfortably covers a 12-match shortlist with 2 LLM calls each
@@ -25,6 +26,14 @@ export async function POST() {
 
   if (!user) {
     return NextResponse.json({ error: 'Not signed in.' }, { status: 401 });
+  }
+
+  // Real runs cost real Anthropic spend. Only the admin account can trigger
+  // one - every other signed-in account is a guest and only sees demo data
+  // (see lib/auth-role.ts). This is enforced here, not just hidden in the UI.
+  const role = await getRole(supabase, user);
+  if (role !== 'admin') {
+    return NextResponse.json({ error: 'Live runs are restricted to the admin account. See the demo preview instead.' }, { status: 403 });
   }
 
   // Idempotency: refuse a new run while one is already in flight for this owner.
