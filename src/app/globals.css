@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+/* Design tokens. Base is black and white - crisp neutrals, not a warm or cool
+   tint - with exactly one interactive accent (blue) laid on top. Everything
+   else is semantic, never decorative: green = positive/win, red = negative/
+   loss, amber = warning/T2, gray = muted/LEAN. No other hues, no gradients.
+   All CSS variables, so dark mode is a token swap, never a second set of
+   components. */
+:root {
+  --surface-0: #ffffff; /* page background */
+  --surface-1: #fafafa; /* raised surfaces - tiles, table, run bar */
+  --ink: #0a0a0a; /* primary text */
+  --ink-muted: #6f6f6f; /* labels, captions, secondary text */
+  --line: #e4e4e4; /* hairline borders, 0.5px */
+
+  --blue: #2563eb; /* the one interactive accent */
+  --blue-tint: #eaf0fe;
+
+  --green: #16794f; /* positive: wins, positive edge, T0 */
+  --green-tint: #e6f4ee;
+  --red: #b3261e; /* negative: losses, negative edge */
+  --red-tint: #fbeae8;
+  --amber: #92600a; /* warnings, T2 */
+  --amber-tint: #fbf1de;
+  --gray: #6b7280; /* muted, LEAN */
+  --gray-tint: #eef0f2;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface-0: #000000;
+    --surface-1: #0e0e0e;
+    --ink: #fafafa;
+    --ink-muted: #8a8a8a;
+    --line: #232323;
+
+    --blue: #5b8def;
+    --blue-tint: #16233d;
+
+    --green: #3ec98d;
+    --green-tint: #123027;
+    --red: #ef6a60;
+    --red-tint: #331d1b;
+    --amber: #e0a83e;
+    --amber-tint: #332b16;
+    --gray: #9aa0ab;
+    --gray-tint: #202226;
+  }
+}
+
+@theme inline {
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-line: var(--line);
+  --color-blue: var(--blue);
+  --color-blue-tint: var(--blue-tint);
+  --color-green: var(--green);
+  --color-green-tint: var(--green-tint);
+  --color-red: var(--red);
+  --color-red-tint: var(--red-tint);
+  --color-amber: var(--amber);
+  --color-amber-tint: var(--amber-tint);
+  --color-gray: var(--gray);
+  --color-gray-tint: var(--gray-tint);
+}
+
+body {
+  background: var(--surface-0);
+  color: var(--ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+/* Tabular figures for every number in a table - odds, probabilities, edges,
+   stakes, units. Non-negotiable for a column of numbers to read as aligned
+   rather than generated. */
+.tabular {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A quiet, continuous shimmer for skeleton/loading states - the only place
+   motion runs on a loop rather than settling; everything else in the app
+   animates once, on reveal, and then stops. */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+.shimmer {
+  background: linear-gradient(90deg, var(--line) 25%, var(--surface-0) 50%, var(--line) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
