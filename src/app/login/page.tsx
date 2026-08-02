@@ -30,7 +30,7 @@ import { LoginBackground } from '@/components/LoginBackground';
 import { MagneticButton } from '@/components/MagneticButton';
 import { ScrambleText } from '@/components/ScrambleText';
 
-type Mode = 'password' | 'reset-sent' | 'signup-sent';
+type Mode = 'password' | 'signup-form' | 'reset-sent' | 'signup-sent';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -56,6 +56,7 @@ async function syncProfileThenGo(router: ReturnType<typeof useRouter>) {
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [mode, setMode] = useState<Mode>('password');
   const [status, setStatus] = useState<'idle' | 'submitting' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -101,9 +102,14 @@ export default function LoginPage() {
     await syncProfileThenGo(router);
   }
 
-  async function handleSignUp() {
+  async function handleSignUp(event: React.FormEvent) {
+    event.preventDefault();
     if (!email || !password) {
       reportError('Enter an email and password first.');
+      return;
+    }
+    if (!ageConfirmed) {
+      reportError('Confirm you are 18 or older to continue.');
       return;
     }
     setStatus('submitting');
@@ -180,7 +186,7 @@ export default function LoginPage() {
       <div
         className="pointer-events-none absolute inset-0"
         style={{
-          background: 'radial-gradient(circle at 50% 44%, transparent 0%, rgba(10,10,11,0.72) 76%)',
+          background: 'radial-gradient(circle at 50% 44%, transparent 0%, rgba(11,15,12,0.72) 76%)',
         }}
         aria-hidden="true"
       />
@@ -230,7 +236,7 @@ export default function LoginPage() {
             transition={{ duration: 0.7, delay: 0.9, ease: EASE }}
             className="mt-5 text-[10px] font-medium uppercase tracking-[0.22em] text-ink-muted"
           >
-            Sign in to continue
+            {mode === 'signup-form' ? 'Create your account' : 'Sign in to continue'}
           </motion.p>
           <Link
             href="/about"
@@ -288,6 +294,142 @@ export default function LoginPage() {
                   </span>
                 </button>
               </motion.div>
+            ) : mode === 'signup-form' ? (
+              <motion.form
+                key="signup-form"
+                onSubmit={handleSignUp}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.45, ease: EASE }}
+                className="space-y-7"
+              >
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.1, ease: EASE }}
+                  className="relative pt-5"
+                >
+                  <input
+                    id="apex-signup-email"
+                    className={fieldClass}
+                    type="email"
+                    required
+                    autoFocus
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                  <label htmlFor="apex-signup-email" className={labelClass}>
+                    Email
+                  </label>
+                  <Underline />
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.16, ease: EASE }}
+                  className="relative pt-5"
+                >
+                  <input
+                    id="apex-signup-password"
+                    className={fieldClass}
+                    type="password"
+                    required
+                    minLength={8}
+                    autoComplete="new-password"
+                    placeholder="At least 8 characters"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <label htmlFor="apex-signup-password" className={labelClass}>
+                    Password
+                  </label>
+                  <Underline />
+                </motion.div>
+
+                <motion.label
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.22, ease: EASE }}
+                  className="flex cursor-pointer items-start gap-2.5 pt-1 text-[12px] leading-relaxed text-ink-secondary"
+                >
+                  <input
+                    type="checkbox"
+                    checked={ageConfirmed}
+                    onChange={(e) => setAgeConfirmed(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--accent)]"
+                  />
+                  I confirm I am 18 or older
+                </motion.label>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.28, ease: EASE }}
+                  className="space-y-4 pt-1"
+                >
+                  <MagneticButton
+                    type="submit"
+                    strength={0.1}
+                    disabled={status === 'submitting'}
+                    className="w-full rounded-md bg-ink px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-canvas [--sheen:rgba(10,10,11,0.14)] transition-opacity disabled:pointer-events-none disabled:opacity-55"
+                  >
+                    <span>{status === 'submitting' ? 'Creating account' : 'Create account'}</span>
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 12 12"
+                      fill="none"
+                      aria-hidden="true"
+                      className="transition-transform duration-500 ease-out group-hover:translate-x-1"
+                    >
+                      <path
+                        d="M1 6h9M6.5 2.5 10 6l-3.5 3.5"
+                        stroke="currentColor"
+                        strokeWidth="1.4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </MagneticButton>
+
+                  <div className="flex items-center justify-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setErrorMessage(null);
+                        setStatus('idle');
+                        setMode('password');
+                      }}
+                      className="group/back text-[11px] text-ink-faint transition-colors hover:text-ink-secondary"
+                    >
+                      <span className="relative">
+                        Already have an account? Sign in
+                        <span className="absolute -bottom-0.5 left-0 h-px w-full origin-left scale-x-0 bg-accent transition-transform duration-300 ease-out group-hover/back:scale-x-100" />
+                      </span>
+                    </button>
+                  </div>
+                </motion.div>
+
+                <AnimatePresence>
+                  {errorMessage ? (
+                    <motion.p
+                      key={errorMessage}
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3, ease: EASE }}
+                      role="alert"
+                      className="text-[11px] leading-relaxed text-loss"
+                    >
+                      {errorMessage}
+                    </motion.p>
+                  ) : null}
+                </AnimatePresence>
+              </motion.form>
             ) : (
               <motion.form
                 key="password"
@@ -388,7 +530,11 @@ export default function LoginPage() {
                     <span className="text-ink-faint">·</span>
                     <button
                       type="button"
-                      onClick={handleSignUp}
+                      onClick={() => {
+                        setErrorMessage(null);
+                        setStatus('idle');
+                        setMode('signup-form');
+                      }}
                       className="group/link2 text-[11px] text-ink-faint transition-colors hover:text-ink-secondary focus-visible:text-ink-secondary"
                     >
                       <span className="relative">

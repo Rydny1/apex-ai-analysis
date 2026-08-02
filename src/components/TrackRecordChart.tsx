@@ -43,7 +43,7 @@ export function TrackRecordChart({ points, height = 320 }: { points: TrackRecord
           />
           <Tooltip
             contentStyle={{
-              background: '#111112',
+              background: '#121712',
               border: '1px solid rgba(255, 255, 255, 0.12)',
               borderRadius: 4,
               fontSize: 12,

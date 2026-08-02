@@ -40,7 +40,7 @@ export function HomeNav({ signedIn }: { signedIn: boolean }) {
         className="w-full border"
         style={{
           borderColor: scrolled ? 'var(--border-hair)' : 'transparent',
-          background: scrolled ? 'rgba(17, 17, 18, 0.72)' : 'transparent',
+          background: scrolled ? 'rgba(18, 23, 18, 0.72)' : 'transparent',
           backdropFilter: scrolled ? 'blur(20px)' : 'none',
         }}
       >
