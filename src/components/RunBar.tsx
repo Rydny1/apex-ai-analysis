@@ -78,17 +78,20 @@ export function RunBar({
   const isDisabled = phase === 'running' || initiallyDisabled;
 
   return (
-    <div className="rounded-md border border-line bg-surface-1 px-5 py-4" style={{ borderWidth: '0.5px' }}>
+    <div className="border border-hair bg-elevated px-5 py-4">
       <AnimatePresence mode="wait">
         {phase === 'running' ? (
           <motion.div key="running" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
             <div className="flex items-center justify-between text-[13px]">
-              <span className="text-ink">{stage}</span>
-              <span className="tabular text-ink-muted">{progressPct}%</span>
+              <span className="flex items-center gap-2 text-ink">
+                <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" />
+                {stage}
+              </span>
+              <span className="tabular font-mono text-ink-muted">{progressPct}%</span>
             </div>
-            <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-line">
+            <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-hair">
               <motion.div
-                className="h-full rounded-full bg-blue"
+                className="h-full rounded-full bg-accent"
                 animate={{ width: `${progressPct}%` }}
                 transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
               />
@@ -104,7 +107,7 @@ export function RunBar({
             className="flex items-center justify-between"
           >
             <div className="flex items-center gap-2 text-[13px] text-ink">
-              <span className="h-1.5 w-1.5 rounded-full bg-green" aria-hidden="true" />
+              <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" />
               {lastRun ? (
                 <span>
                   Last run: {formatRunLine(lastRun)}
@@ -114,7 +117,7 @@ export function RunBar({
               )}
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-[13px] text-ink-muted">
+              <span className="tabular font-mono text-[13px] text-ink-muted">
                 {runsToday} of {maxRunsPerDay} runs today
               </span>
               <button
@@ -122,7 +125,7 @@ export function RunBar({
                 onClick={handleRun}
                 disabled={isDisabled}
                 title={isDisabled ? (disabledReason ?? undefined) : undefined}
-                className="flex items-center gap-1.5 rounded border border-blue px-3 py-1.5 text-[13px] font-medium text-blue transition-colors hover:bg-blue-tint disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex min-h-[44px] items-center gap-1.5 rounded-md border border-accent/40 px-3 py-1.5 text-[13px] font-medium text-accent transition-colors hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <PlayIcon />
                 Run analysis
@@ -131,7 +134,7 @@ export function RunBar({
           </motion.div>
         )}
       </AnimatePresence>
-      {errorMessage ? <p className="mt-2 text-[11px] text-red">{errorMessage}</p> : null}
+      {errorMessage ? <p className="mt-2 text-[11px] text-loss">{errorMessage}</p> : null}
     </div>
   );
 }
