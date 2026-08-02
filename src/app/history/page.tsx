@@ -20,24 +20,24 @@ export default async function HistoryPage() {
       {!runs || runs.length === 0 ? (
         <p className="mt-6 text-[13px] text-ink-muted">No runs yet.</p>
       ) : (
-        <div className="mt-6 divide-y divide-line rounded-md border border-line" style={{ borderWidth: '0.5px' }}>
+        <div className="mt-6 divide-y divide-hair border border-hair">
           {runs.map((run) => (
             <Link
               key={run.id}
               href={`/results/${run.id}`}
-              className="flex items-center justify-between px-4 py-3 text-[13px] hover:bg-surface-1"
+              className="flex items-center justify-between px-4 py-3 text-[13px] transition-colors hover:bg-inset"
             >
               <span className="text-ink">{new Date(run.started_at).toLocaleString()}</span>
               <span className="flex items-center gap-4 text-ink-muted">
                 <span
                   className={
-                    run.status === 'completed' ? 'text-green' : run.status === 'failed' ? 'text-red' : 'text-ink-muted'
+                    run.status === 'completed' ? 'text-accent' : run.status === 'failed' ? 'text-loss' : 'text-ink-muted'
                   }
                 >
                   {run.status}
                 </span>
-                <span className="tabular">{run.entered_count} entered</span>
-                <span className="tabular">${Number(run.cost_usd).toFixed(2)}</span>
+                <span className="tabular font-mono">{run.entered_count} entered</span>
+                <span className="tabular font-mono">${Number(run.cost_usd).toFixed(2)}</span>
               </span>
             </Link>
           ))}
