@@ -32,6 +32,9 @@ async function AdminRunView() {
   const sinceDate = new Date();
   sinceDate.setTime(sinceDate.getTime() - 24 * 60 * 60 * 1000);
   const since = sinceDate.toISOString();
+  const staleCutoffDate = new Date();
+  staleCutoffDate.setTime(staleCutoffDate.getTime() - (config.limits.runMaxDurationSeconds + config.limits.staleRunGraceSeconds) * 1000);
+  const staleCutoff = staleCutoffDate.toISOString();
 
   // None of these six queries depend on each other - firing them together
   // instead of one at a time turns six round trips into one.
@@ -46,7 +49,16 @@ async function AdminRunView() {
     // Failed runs don't count toward the daily cap (see /api/run) - match
     // that exclusion here so the displayed count agrees with what actually blocks a run.
     supabase.from('runs').select('id', { count: 'exact', head: true }).gte('started_at', since).neq('status', 'failed'),
-    supabase.from('runs').select('id').eq('status', 'running').limit(1),
+    // Only a recently-started 'running' row counts as in flight - one whose
+    // background execution died without reaching the catch block (a hard
+    // platform kill, a hung fetch) would otherwise block every future run
+    // forever. See the matching comment in /api/run/route.ts.
+    supabase
+      .from('runs')
+      .select('id')
+      .eq('status', 'running')
+      .gte('started_at', staleCutoff)
+      .limit(1),
     supabase.from('runs').select('id, started_at, scanned_count, entered_count').eq('status', 'completed').order('started_at', { ascending: false }).limit(1).maybeSingle(),
     supabase.from('settlements').select('result, roi_pct, clv_pct, picks!inner(stake_pct)'),
     supabase.from('picks').select('id').eq('is_pick', true),

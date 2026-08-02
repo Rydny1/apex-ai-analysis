@@ -50,16 +50,11 @@ export function DemoRunBar({ sampleRunLabel }: { sampleRunLabel: string }) {
               className="w-full max-w-md border border-hair bg-elevated p-7"
             >
               <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted">Live runs are gated</p>
-              <h2 className="mt-3 font-serif text-[24px] text-ink">This one&apos;s on the house, not on your click</h2>
+              <h2 className="mt-3 font-serif text-[24px] text-ink">Real runs cost real money</h2>
               <p className="mt-3 text-[13px] leading-relaxed text-ink-secondary">
-                Each live analysis calls Claude Sonnet 5 against real fixtures and costs real money. That button
-                is restricted to the admin account so a shared portfolio link can&apos;t rack up an open-ended bill.
-                What you&apos;re looking at above is a real run APEX priced against an actual week of matches - not a
-                mockup.
-              </p>
-              <p className="mt-3 text-[13px] leading-relaxed text-ink-secondary">
-                The public track record on the tracking page is fed by the admin&apos;s real runs, settled against
-                real results. That&apos;s the honest version of &quot;does this work.&quot;
+                The picks above are a real APEX run, not a mockup, compared against actual results. Live runs are
+                restricted to the admin account since each one costs real money to generate. Check the tracking
+                page for the full, ongoing track record.
               </p>
               <div className="mt-6 flex items-center gap-4">
                 <Link

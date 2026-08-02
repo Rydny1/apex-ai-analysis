@@ -52,9 +52,17 @@ export const config = {
   },
   // Layer 2 in-app cost/rate caps (Layer 1, the console spend cap, is set outside the code).
   limits: {
-    maxRunsPerDay: 3,
+    maxRunsPerDay: 2,
+    maxRunsPer5Days: 2,
     maxMatchesPerRun: 12,
     perRunCostGuardUsd: 1.5,
+    // Must match /api/run's `maxDuration`. Used to decide when a 'running'
+    // row is stale (its background execution died without ever reaching the
+    // catch block - a hard platform kill, a hung fetch with no timeout) and
+    // should stop blocking new runs, in both the actual enforcement and the
+    // dashboard's own "run in progress" display.
+    runMaxDurationSeconds: 300,
+    staleRunGraceSeconds: 300,
   },
   // Leagues covered by the spec, used to build the S1 fixture scan.
   leagues: {

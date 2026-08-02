@@ -16,7 +16,10 @@ import { config } from '@/lib/config';
 import { getRole } from '@/lib/auth-role';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-export const maxDuration = 300; // 5 minutes - comfortably covers a 12-match shortlist with 2 LLM calls each
+// Must be a literal - Next.js reads route segment config via static analysis,
+// not by executing the module, so this can't reference config.ts. Keep in
+// sync with config.limits.runMaxDurationSeconds by hand.
+export const maxDuration = 300;
 
 export async function POST() {
   const supabase = await createClient();
@@ -36,20 +39,35 @@ export async function POST() {
     return NextResponse.json({ error: 'Live runs are restricted to the admin account. See the demo preview instead.' }, { status: 403 });
   }
 
-  // Idempotency: refuse a new run while one is already in flight for this owner.
-  const { data: inFlight } = await supabase.from('runs').select('id').eq('status', 'running').limit(1);
+  // Idempotency: refuse a new run while one is already in flight - but only
+  // treat a 'running' row as genuinely in flight if it started recently. A
+  // run whose background execution died without hitting the catch block
+  // (the platform hard-killing the function at maxDuration, a hung fetch
+  // with no timeout) leaves the row stuck at 'running' forever otherwise,
+  // permanently blocking every future run until someone fixes it by hand.
+  // maxDuration is 300s; five minutes of slack past that is enough for a
+  // real run to still be legitimately mid-flight without also being an
+  // effectively infinite lockout.
+  const staleCutoff = new Date(Date.now() - (config.limits.runMaxDurationSeconds + config.limits.staleRunGraceSeconds) * 1000).toISOString();
+  const { data: inFlight } = await supabase.from('runs').select('id').eq('status', 'running').gte('started_at', staleCutoff).limit(1);
   if (inFlight && inFlight.length > 0) {
     return NextResponse.json({ error: 'A run is already in progress.' }, { status: 409 });
   }
 
-  // Max 3 runs per rolling 24h, counted from the database (not in-memory, so it
-  // survives across serverless invocations). Failed runs don't count - a run
-  // that died before scanning a single fixture (a bad API key, a provider
-  // outage) isn't a real attempt, and shouldn't burn one of three real slots.
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const { count } = await supabase.from('runs').select('id', { count: 'exact', head: true }).gte('started_at', since).neq('status', 'failed');
-  if ((count ?? 0) >= config.limits.maxRunsPerDay) {
+  // Two rolling-window caps, both counted from the database so they survive
+  // across serverless invocations. Failed runs don't count toward either - a
+  // run that died before scanning a single fixture isn't a real attempt.
+  const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const since5d = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
+  const [{ count: count24h }, { count: count5d }] = await Promise.all([
+    supabase.from('runs').select('id', { count: 'exact', head: true }).gte('started_at', since24h).neq('status', 'failed'),
+    supabase.from('runs').select('id', { count: 'exact', head: true }).gte('started_at', since5d).neq('status', 'failed'),
+  ]);
+  if ((count24h ?? 0) >= config.limits.maxRunsPerDay) {
     return NextResponse.json({ error: `Max ${config.limits.maxRunsPerDay} runs per 24 hours reached.` }, { status: 429 });
+  }
+  if ((count5d ?? 0) >= config.limits.maxRunsPer5Days) {
+    return NextResponse.json({ error: `Max ${config.limits.maxRunsPer5Days} runs per 5 days reached.` }, { status: 429 });
   }
 
   const windowStart = new Date();

@@ -34,8 +34,10 @@ export function RunBar({
   const [progressPct, setProgressPct] = useState(0);
   const [stage, setStage] = useState('Starting');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [etaLabel, setEtaLabel] = useState<string | null>(null);
   const router = useRouter();
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const runStartedAtRef = useRef<number>(0);
 
   useEffect(() => () => {
     if (pollRef.current) clearInterval(pollRef.current);
@@ -46,6 +48,8 @@ export function RunBar({
     setProgressPct(0);
     setStage('Starting');
     setErrorMessage(null);
+    setEtaLabel(null);
+    runStartedAtRef.current = Date.now();
 
     const response = await fetch('/api/run', { method: 'POST' });
     const body = await response.json();
@@ -63,6 +67,14 @@ export function RunBar({
       if (!data) return;
       setProgressPct(data.progress_pct);
       setStage(data.progress_stage);
+
+      // Simple linear projection from elapsed time and percent complete - good
+      // enough for "a few minutes left", not a promise of precision.
+      if (data.progress_pct > 2) {
+        const elapsedMs = Date.now() - runStartedAtRef.current;
+        const remainingMs = (elapsedMs / data.progress_pct) * (100 - data.progress_pct);
+        setEtaLabel(formatEta(remainingMs));
+      }
 
       if (data.status === 'completed') {
         if (pollRef.current) clearInterval(pollRef.current);
@@ -87,7 +99,9 @@ export function RunBar({
                 <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" />
                 {stage}
               </span>
-              <span className="tabular font-mono text-ink-muted">{progressPct}%</span>
+              <span className="tabular font-mono text-ink-muted">
+                {progressPct}%{etaLabel ? ` · ${etaLabel} left` : ''}
+              </span>
             </div>
             <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-hair">
               <motion.div
@@ -137,6 +151,14 @@ export function RunBar({
       {errorMessage ? <p className="mt-2 text-[11px] text-loss">{errorMessage}</p> : null}
     </div>
   );
+}
+
+function formatEta(remainingMs: number): string {
+  const totalSeconds = Math.max(0, Math.round(remainingMs / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  if (minutes === 0) return `${seconds}s`;
+  return `${minutes}m ${seconds}s`;
 }
 
 function formatRunLine(run: LastRunSummary): string {
