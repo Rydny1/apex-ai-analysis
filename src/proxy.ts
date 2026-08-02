@@ -1,10 +1,10 @@
-// Refreshes the Supabase session on every request and enforces the single-owner
-// allowlist (see lib/auth.ts) - anyone signed in as someone other than the owner
-// is redirected to login instead of ever reaching a page with real data on it.
+// Refreshes the Supabase session on every request and requires sign-in for every
+// page except the public ones below. Multi-user: any signed-up account can use
+// the app, and RLS (see the runs/matches/picks policies) already scopes every
+// row to owner_id = auth.uid(), so one account never sees another's runs.
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { config as appConfig } from './lib/config';
-import { isOwnerEmail } from './lib/auth';
 
 const PUBLIC_PATHS = ['/login', '/auth/callback', '/about'];
 
@@ -30,7 +30,7 @@ export async function proxy(request: NextRequest) {
 
   const isPublicPath = PUBLIC_PATHS.some((path) => request.nextUrl.pathname.startsWith(path));
 
-  if (!isPublicPath && (!user || !isOwnerEmail(user.email))) {
+  if (!isPublicPath && !user) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = '/login';
     return NextResponse.redirect(loginUrl);
