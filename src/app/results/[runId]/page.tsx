@@ -12,11 +12,14 @@ export default async function ResultsPage({ params }: { params: Promise<{ runId:
   const { runId } = await params;
   const supabase = await createClient();
 
-  const { data: run } = await supabase.from('runs').select('*').eq('id', runId).maybeSingle();
+  // All three only need runId, not each other's results, so they can fire
+  // together instead of waiting on the run row before starting the rest.
+  const [{ data: run }, { data: matches }, { data: runPicks }] = await Promise.all([
+    supabase.from('runs').select('*').eq('id', runId).maybeSingle(),
+    supabase.from('matches').select('*').eq('run_id', runId),
+    supabase.from('picks').select('*').eq('run_id', runId),
+  ]);
   if (!run) notFound();
-
-  const { data: matches } = await supabase.from('matches').select('*').eq('run_id', runId);
-  const { data: runPicks } = await supabase.from('picks').select('*').eq('run_id', runId);
 
   const matchById = new Map((matches ?? []).map((m) => [m.id, m]));
   const placedPicks = (runPicks ?? []).filter((p) => p.is_pick);

@@ -14,11 +14,14 @@ import { Reveal } from '@/components/Reveal';
 // signed-in account sees on /tracking.
 export default async function HomePage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const signedIn = Boolean(user);
-  const { data: rawRows } = await supabase.from('global_track_record').select('*').order('settled_at', { ascending: false });
+  // The auth check and the track-record read don't depend on each other -
+  // running them in parallel instead of one after the other cuts a full
+  // round trip off this page's time-to-first-byte.
+  const [{ data: userData }, { data: rawRows }] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase.from('global_track_record').select('*').order('settled_at', { ascending: false }),
+  ]);
+  const signedIn = Boolean(userData.user);
 
   const rows: TrackRecordRow[] = (rawRows ?? []).map((r) => ({
     id: r.id,
