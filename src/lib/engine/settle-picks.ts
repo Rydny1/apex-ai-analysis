@@ -28,7 +28,7 @@ export async function settleFinishedPicks(): Promise<{ settled: number; skipped:
 
   const { data: candidatePicks } = await supabase
     .from('picks')
-    .select('id, market, line, entry_odds, match_id, matches!inner(external_fixture_id, kickoff)')
+    .select('id, market, line, tier, entry_odds, stake_pct, match_id, matches!inner(external_fixture_id, kickoff, competition, home_team, away_team)')
     .eq('is_pick', true)
     .lte('matches.kickoff', cutoff);
 
@@ -49,22 +49,40 @@ export async function settleFinishedPicks(): Promise<{ settled: number; skipped:
       continue;
     }
 
-    const fixtureId = (pick as unknown as { matches: { external_fixture_id: string } }).matches.external_fixture_id;
-    const finalScore = await fetchFinalScore(fixtureId);
+    const match = (pick as unknown as { matches: { external_fixture_id: string; competition: string; home_team: string; away_team: string } }).matches;
+    const finalScore = await fetchFinalScore(match.external_fixture_id);
     if (!finalScore) {
       skipped += 1; // match not actually finished yet, or the API had no data - try again next cron run
       continue;
     }
 
     const result = settleOverUnderGoals(pick.line, finalScore.home, finalScore.away);
-    const roiPct = pick.entry_odds ? computeRoiPct(result, pick.entry_odds, 1) : 0; // ROI per unit stake; actual stake_pct lives on the pick row for display
+    const roiPct = pick.entry_odds ? computeRoiPct(result, pick.entry_odds, 100) : 0; // percentage return on a full ("100%") stake, before scaling by the pick's actual stake_pct
+    const settledAt = new Date().toISOString();
 
     await supabase.from('settlements').insert({
       pick_id: pick.id,
       result,
-      settled_at: new Date().toISOString(),
+      settled_at: settledAt,
       roi_pct: roiPct,
     });
+
+    // Every real settled pick also lands in the one public, shared track
+    // record - the homepage and /tracking read only from here, never from
+    // the per-owner settlements table, so this is what actually keeps the
+    // portfolio's "live" numbers live. See lib/track-record.ts.
+    await supabase.from('global_track_record').insert({
+      settled_at: settledAt,
+      competition: match.competition,
+      match_label: `${match.home_team} vs ${match.away_team}`,
+      market: pick.line ? `${pick.market} ${pick.line}` : pick.market,
+      tier: pick.tier,
+      result,
+      roi_pct: roiPct,
+      clv_pct: null, // CLV needs a closing-odds snapshot near kickoff - a follow-up, see settlements table's own note
+      stake_pct: pick.stake_pct,
+    });
+
     settled += 1;
   }
 
