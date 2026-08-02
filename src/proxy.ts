@@ -6,7 +6,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { config as appConfig } from './lib/config';
 import { isOwnerEmail } from './lib/auth';
 
-const PUBLIC_PATHS = ['/login', '/auth/callback'];
+const PUBLIC_PATHS = ['/login', '/auth/callback', '/about'];
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });

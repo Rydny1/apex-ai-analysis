@@ -22,6 +22,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Link href="/history" className="hover:text-ink">
               History
             </Link>
+            <Link href="/about" className="hover:text-ink">
+              About
+            </Link>
             <SignOutButton />
           </nav>
         </div>
