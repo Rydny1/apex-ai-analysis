@@ -4,13 +4,13 @@
 // restrained; this is the arrival moment, so it gets the full treatment:
 // a depth-layered constellation field that webs itself to the cursor, a
 // decode-and-settle wordmark, editorial underline fields whose rules draw in
-// blue on focus, and a magnetic submit control.
+// accent green on focus, and a magnetic submit control.
 //
-// Deliberately black regardless of system theme - the same pattern Linear and
-// Vercel use for sign-in, a distinct threshold before the quiet dashboard
-// behind it. Built entirely on canvas 2D + transform/opacity + framer-motion:
-// no WebGL, no video, no extra dependency, and no gradient anywhere except the
-// single cursor spotlight and the button sheen.
+// Deliberately dark canvas regardless of system theme - the same pattern
+// Linear and Vercel use for sign-in, a distinct threshold before the quiet
+// dashboard behind it. Built entirely on canvas 2D + transform/opacity +
+// framer-motion: no WebGL, no video, no extra dependency, and no gradient
+// anywhere except the aurora glows and the button sheen.
 //
 // The choreography never gates interaction. Every field is mounted, focusable
 // and typeable on first paint - only opacity and translate are animated, and
@@ -35,12 +35,23 @@ type Mode = 'password' | 'reset-sent' | 'signup-sent';
 const EASE = [0.16, 1, 0.3, 1] as const;
 
 const fieldClass =
-  'peer w-full border-0 bg-transparent px-0 pb-2 text-[13px] text-white outline-none ' +
-  'placeholder:text-white/20 [color-scheme:dark]';
+  'peer w-full border-0 bg-transparent px-0 pb-2 text-[13px] text-ink outline-none ' +
+  'placeholder:text-ink-faint [color-scheme:dark]';
 
 const labelClass =
   'pointer-events-none absolute left-0 top-0 text-[10px] font-medium uppercase tracking-[0.16em] ' +
-  'text-white/35 transition-colors duration-300 peer-focus:text-blue';
+  'text-ink-muted transition-colors duration-300 peer-focus:text-accent';
+
+async function syncProfileThenGo(router: ReturnType<typeof useRouter>) {
+  try {
+    await fetch('/api/auth/sync-profile', { method: 'POST' });
+  } catch {
+    // Non-fatal - the role check on the server falls back to a direct email
+    // comparison (see lib/auth-role.ts) if the profile row isn't there yet.
+  }
+  router.push('/run');
+  router.refresh();
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -87,8 +98,7 @@ export default function LoginPage() {
       reportError(error.message);
       return;
     }
-    router.push('/run');
-    router.refresh();
+    await syncProfileThenGo(router);
   }
 
   async function handleSignUp() {
@@ -109,8 +119,7 @@ export default function LoginPage() {
     }
     setStatus('idle');
     if (data.session) {
-      router.push('/run');
-      router.refresh();
+      await syncProfileThenGo(router);
       return;
     }
     setMode('signup-sent'); // Supabase project has email confirmation on - check inbox
@@ -141,7 +150,7 @@ export default function LoginPage() {
     // canonical fix: transform and layout animations are dropped for anyone who
     // asked, opacity still crossfades, so nothing ever snaps into place.
     <MotionConfig reducedMotion="user">
-    <div className="relative flex min-h-dvh flex-1 items-center justify-center overflow-hidden bg-black">
+    <div className="relative flex min-h-dvh flex-1 items-center justify-center overflow-hidden bg-canvas">
       {/* Scoped to this screen only - globals.css is left alone. Chrome's
           autofill styling would otherwise paint an opaque pale box straight
           through the glass panel. */}
@@ -149,21 +158,29 @@ export default function LoginPage() {
         .apex-login input:-webkit-autofill,
         .apex-login input:-webkit-autofill:hover,
         .apex-login input:-webkit-autofill:focus {
-          -webkit-text-fill-color: #ffffff;
+          -webkit-text-fill-color: #f5f4ef;
           -webkit-box-shadow: 0 0 0 1000px transparent inset;
           transition: background-color 9999s ease-in-out 0s;
-          caret-color: #ffffff;
+          caret-color: #f5f4ef;
         }
       `}</style>
 
       <LoginBackground />
+
+      {/* Ambient aurora behind the wordmark - the slow 20s drift, shared with
+          the homepage hero. Pure atmosphere, never load-bearing. */}
+      <div
+        className="aurora-ambient pointer-events-none absolute left-1/2 top-[30%] h-[420px] w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-full"
+        style={{ background: 'radial-gradient(circle, var(--accent-glow), transparent 70%)', filter: 'blur(60px)' }}
+        aria-hidden="true"
+      />
 
       {/* Vignette: grounds the edges so the constellation reads as atmosphere
           behind the content rather than noise competing with it. */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
-          background: 'radial-gradient(circle at 50% 44%, transparent 0%, rgba(0,0,0,0.62) 76%)',
+          background: 'radial-gradient(circle at 50% 44%, transparent 0%, rgba(10,10,11,0.72) 76%)',
         }}
         aria-hidden="true"
       />
@@ -182,7 +199,7 @@ export default function LoginPage() {
 
       <main className="apex-login relative z-10 w-full max-w-[344px] px-6">
         <div className="text-center">
-          <h1 className="tabular -mr-[0.34em] text-[38px] leading-none tracking-[0.34em] text-white">
+          <h1 className="tabular -mr-[0.34em] text-[38px] leading-none tracking-[0.34em] text-ink">
             <ScrambleText text="APEX" delay={140} stagger={100} settle={360} />
           </h1>
 
@@ -190,7 +207,8 @@ export default function LoginPage() {
             initial={{ scaleX: 0, opacity: 0 }}
             animate={{ scaleX: 1, opacity: 1 }}
             transition={{ duration: 0.9, delay: 0.75, ease: EASE }}
-            className="mx-auto mt-7 h-px w-10 origin-center bg-blue"
+            className="mx-auto mt-7 h-[1.5px] w-[60px] origin-center bg-accent"
+            style={{ boxShadow: '0 0 8px var(--accent-dim)' }}
             aria-hidden="true"
           />
 
@@ -198,19 +216,26 @@ export default function LoginPage() {
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.9, ease: EASE }}
-            className="mt-5 text-[10px] font-medium uppercase tracking-[0.22em] text-white/40"
+            className="mt-5 text-[10px] font-medium uppercase tracking-[0.22em] text-ink-muted"
           >
             Sign in to continue
           </motion.p>
-          <Link href="/about" className="mt-2 inline-block text-[10px] text-white/30 hover:text-white/60">
+          <Link
+            href="/about"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 inline-block text-[10px] text-ink-faint hover:text-ink-secondary"
+          >
             What is APEX?
           </Link>
         </div>
 
         <motion.div
+          layout
           initial={{ opacity: 0, y: 14 }}
           animate={cardControls}
-          className="mt-10 rounded-md border border-white/[0.09] bg-black/45 p-7 backdrop-blur-[10px]"
+          transition={{ layout: { duration: 0.4, ease: EASE } }}
+          className="mt-10 rounded-md border border-hair bg-elevated/[0.92] p-7 backdrop-blur-[10px]"
         >
           {/* No `initial={false}` here: AnimatePresence pushes that down through
               presence context to every nested motion element, which would
@@ -218,11 +243,11 @@ export default function LoginPage() {
           <AnimatePresence mode="wait">
             {mode === 'signup-sent' ? (
               <motion.div key="signup-sent" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.45, ease: EASE }}>
-                <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-blue">Account created</p>
-                <p className="mt-3 text-[13px] leading-relaxed text-white/75">
+                <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-accent">Account created</p>
+                <p className="mt-3 text-[13px] leading-relaxed text-ink-secondary">
                   Check your inbox to confirm your email, then sign in.
                 </p>
-                <button type="button" onClick={() => setMode('password')} className="mt-6 text-[11px] text-white/45 hover:text-white/85">
+                <button type="button" onClick={() => setMode('password')} className="mt-6 text-[11px] text-ink-faint hover:text-ink-secondary">
                   Back to sign in
                 </button>
               </motion.div>
@@ -234,20 +259,20 @@ export default function LoginPage() {
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.45, ease: EASE }}
               >
-                <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-blue">
+                <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-accent">
                   Link sent
                 </p>
-                <p className="mt-3 text-[13px] leading-relaxed text-white/75">
+                <p className="mt-3 text-[13px] leading-relaxed text-ink-secondary">
                   Check your inbox for a link to set a new password.
                 </p>
                 <button
                   type="button"
                   onClick={() => setMode('password')}
-                  className="group/back mt-6 text-[11px] text-white/45 transition-colors hover:text-white/85"
+                  className="group/back mt-6 text-[11px] text-ink-faint transition-colors hover:text-ink-secondary"
                 >
                   <span className="relative">
                     Back to sign in
-                    <span className="absolute -bottom-0.5 left-0 h-px w-full origin-left scale-x-0 bg-white/50 transition-transform duration-300 group-hover/back:scale-x-100" />
+                    <span className="absolute -bottom-0.5 left-0 h-px w-full origin-left scale-x-0 bg-ink-secondary transition-transform duration-300 group-hover/back:scale-x-100" />
                   </span>
                 </button>
               </motion.div>
@@ -312,13 +337,11 @@ export default function LoginPage() {
                   transition={{ duration: 0.6, delay: 0.6, ease: EASE }}
                   className="space-y-4 pt-1"
                 >
-                  {/* White fill, black text: 21:1, and it keeps blue rare enough
-                      to stay meaningful. The sheen goes dark on a light face. */}
                   <MagneticButton
                     type="submit"
                     strength={0.1}
                     disabled={status === 'submitting'}
-                    className="w-full rounded-md bg-white px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-black [--sheen:rgba(0,0,0,0.11)] transition-opacity disabled:pointer-events-none disabled:opacity-55"
+                    className="w-full rounded-md bg-ink px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-canvas [--sheen:rgba(10,10,11,0.14)] transition-opacity disabled:pointer-events-none disabled:opacity-55"
                   >
                     <span>{status === 'submitting' ? 'Signing in' : 'Sign in'}</span>
                     <svg
@@ -343,22 +366,22 @@ export default function LoginPage() {
                     <button
                       type="button"
                       onClick={handleForgotPassword}
-                      className="group/link text-[11px] text-white/40 transition-colors hover:text-white/80 focus-visible:text-white/80 focus-visible:outline-none"
+                      className="group/link text-[11px] text-ink-faint transition-colors hover:text-ink-secondary focus-visible:text-ink-secondary"
                     >
                       <span className="relative">
                         Forgot password?
-                        <span className="absolute -bottom-0.5 left-0 h-px w-full origin-left scale-x-0 bg-blue transition-transform duration-300 ease-out group-hover/link:scale-x-100 group-focus-visible/link:scale-x-100" />
+                        <span className="absolute -bottom-0.5 left-0 h-px w-full origin-left scale-x-0 bg-accent transition-transform duration-300 ease-out group-hover/link:scale-x-100 group-focus-visible/link:scale-x-100" />
                       </span>
                     </button>
-                    <span className="text-white/20">·</span>
+                    <span className="text-ink-faint">·</span>
                     <button
                       type="button"
                       onClick={handleSignUp}
-                      className="group/link2 text-[11px] text-white/40 transition-colors hover:text-white/80 focus-visible:text-white/80 focus-visible:outline-none"
+                      className="group/link2 text-[11px] text-ink-faint transition-colors hover:text-ink-secondary focus-visible:text-ink-secondary"
                     >
                       <span className="relative">
                         Create account
-                        <span className="absolute -bottom-0.5 left-0 h-px w-full origin-left scale-x-0 bg-blue transition-transform duration-300 ease-out group-hover/link2:scale-x-100 group-focus-visible/link2:scale-x-100" />
+                        <span className="absolute -bottom-0.5 left-0 h-px w-full origin-left scale-x-0 bg-accent transition-transform duration-300 ease-out group-hover/link2:scale-x-100 group-focus-visible/link2:scale-x-100" />
                       </span>
                     </button>
                   </div>
@@ -373,7 +396,7 @@ export default function LoginPage() {
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.3, ease: EASE }}
                       role="alert"
-                      className="text-[11px] leading-relaxed text-red"
+                      className="text-[11px] leading-relaxed text-loss"
                     >
                       {errorMessage}
                     </motion.p>
@@ -389,15 +412,15 @@ export default function LoginPage() {
   );
 }
 
-// The field rule: a static hairline with a blue rule that draws across it from
-// the left on focus. scaleX only - nothing here touches width.
+// The field rule: a static hairline with an accent rule that draws across it
+// from the left on focus. scaleX only - nothing here touches width.
 function Underline() {
   return (
     <>
-      <span aria-hidden="true" className="absolute bottom-0 left-0 h-px w-full bg-white/15" />
+      <span aria-hidden="true" className="absolute bottom-0 left-0 h-px w-full bg-hair" />
       <span
         aria-hidden="true"
-        className="absolute bottom-0 left-0 h-px w-full origin-left scale-x-0 bg-blue transition-transform duration-500 ease-out peer-focus:scale-x-100"
+        className="absolute bottom-0 left-0 h-px w-full origin-left scale-x-0 bg-accent transition-transform duration-500 ease-out peer-focus:scale-x-100"
       />
     </>
   );

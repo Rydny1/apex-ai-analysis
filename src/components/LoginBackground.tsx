@@ -5,9 +5,9 @@
 // size, brightness, drift speed and how far it parallaxes against the pointer,
 // so the field reads as three-dimensional without a second canvas or any WebGL.
 //
-// The blue accent appears in exactly one place here - nodes close enough to the
-// cursor light up and web themselves to it. Everywhere else the field is white
-// on black. That rarity is what makes the blue register.
+// The accent green appears in exactly one place here - nodes close enough to
+// the cursor light up and web themselves to it. Everywhere else the field is
+// a faint white on black. That rarity is what makes the accent register.
 //
 // Performance contract:
 //  - ONE canvas, ONE shared rAF loop, ONE pointermove listener. Never per-node
@@ -35,10 +35,9 @@ interface Node {
   phase: number;
 }
 
-// Matches --blue in dark mode. The login screen is always black, so this is
-// pinned rather than read from the token, which would resolve to the light-mode
-// blue whenever the OS is in light mode.
-const BLUE = '91, 141, 239';
+// Matches --accent (#A8E6A3). Pinned rather than read from the CSS variable
+// since this is drawn on canvas, not through the cascade.
+const ACCENT = '168, 230, 163';
 
 const PULL_RADIUS = 150;
 const PULL_RADIUS_SQ = PULL_RADIUS * PULL_RADIUS;
@@ -124,6 +123,7 @@ export function LoginBackground() {
 
     function onPointerMove(event: PointerEvent) {
       if (!canvas) return;
+      if (event.pointerType !== 'mouse') return; // no floating light on touch devices
       const rect = canvas.getBoundingClientRect();
       pointer.x = event.clientX - rect.left;
       pointer.y = event.clientY - rect.top;
@@ -221,7 +221,7 @@ export function LoginBackground() {
 
       // --- Cursor web: the only blue in the composition ----------------------
       if (pointer.active) {
-        ctx.strokeStyle = `rgba(${BLUE}, 1)`;
+        ctx.strokeStyle = `rgba(${ACCENT}, 1)`;
         ctx.lineWidth = 0.7;
         for (let i = 0; i < count; i++) {
           const dx = pointer.x - renderX[i];
@@ -259,7 +259,7 @@ export function LoginBackground() {
         if (lit > 0.02) {
           // A soft halo, drawn as a second low-alpha disc rather than with
           // shadowBlur - shadowBlur is far more expensive per draw.
-          ctx.fillStyle = `rgba(${BLUE}, 1)`;
+          ctx.fillStyle = `rgba(${ACCENT}, 1)`;
           ctx.globalAlpha = lit * 0.16;
           ctx.beginPath();
           ctx.arc(renderX[i], renderY[i], radius + 4.5 * lit, 0, Math.PI * 2);
@@ -322,10 +322,13 @@ export function LoginBackground() {
 
   return (
     <>
-      <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" aria-hidden="true" />
-      {/* The single cursor-tracking spotlight. Position comes from CSS custom
-          properties written by the one pointermove listener above - never from
-          React state, which would re-render the tree on every mouse move. */}
+      {/* The cursor-following aurora. Sits behind the constellation canvas -
+          this order (aurora first, canvas second) is what puts it behind both
+          the constellation and the card above. Position comes from CSS custom
+          properties written by the one pointermove listener above - never
+          from React state, which would re-render the tree on every mouse
+          move. Blurred hard so it reads as floating light, not a spotlight
+          with a hard edge. */}
       <div
         ref={spotlightRef}
         className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-700"
@@ -333,12 +336,14 @@ export function LoginBackground() {
           {
             '--mx': '50%',
             '--my': '50%',
+            filter: 'blur(80px)',
             background:
-              `radial-gradient(420px circle at var(--mx) var(--my), rgba(${BLUE},0.13), transparent 68%)`,
+              `radial-gradient(200px circle at var(--mx) var(--my), rgba(${ACCENT},0.15), transparent 70%)`,
           } as React.CSSProperties
         }
         aria-hidden="true"
       />
+      <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" aria-hidden="true" />
     </>
   );
 }
