@@ -32,20 +32,30 @@ async function AdminRunView() {
   const sinceDate = new Date();
   sinceDate.setTime(sinceDate.getTime() - 24 * 60 * 60 * 1000);
   const since = sinceDate.toISOString();
-  const { count: runsToday } = await supabase.from('runs').select('id', { count: 'exact', head: true }).gte('started_at', since);
-  const { data: inFlight } = await supabase.from('runs').select('id').eq('status', 'running').limit(1);
+
+  // None of these six queries depend on each other - firing them together
+  // instead of one at a time turns six round trips into one.
+  const [
+    { count: runsToday },
+    { data: inFlight },
+    { data: latestRun },
+    { data: settlements },
+    { data: placedPickIds },
+    { data: settledPickIds },
+  ] = await Promise.all([
+    // Failed runs don't count toward the daily cap (see /api/run) - match
+    // that exclusion here so the displayed count agrees with what actually blocks a run.
+    supabase.from('runs').select('id', { count: 'exact', head: true }).gte('started_at', since).neq('status', 'failed'),
+    supabase.from('runs').select('id').eq('status', 'running').limit(1),
+    supabase.from('runs').select('id, started_at, scanned_count, entered_count').eq('status', 'completed').order('started_at', { ascending: false }).limit(1).maybeSingle(),
+    supabase.from('settlements').select('result, roi_pct, clv_pct, picks!inner(stake_pct)'),
+    supabase.from('picks').select('id').eq('is_pick', true),
+    supabase.from('settlements').select('pick_id'),
+  ]);
+
   const isInFlight = Boolean(inFlight && inFlight.length > 0);
   const isOverDailyCap = (runsToday ?? 0) >= config.limits.maxRunsPerDay;
 
-  const { data: latestRun } = await supabase
-    .from('runs')
-    .select('id, started_at, scanned_count, entered_count')
-    .eq('status', 'completed')
-    .order('started_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  const { data: settlements } = await supabase.from('settlements').select('result, roi_pct, clv_pct, picks!inner(stake_pct)');
   const summary = summarizeSettlements((settlements ?? []).map((s) => ({ result: s.result as SettlementResult, clvPct: s.clv_pct })));
   // ROI on total action (profit / total staked), not a sum of individual
   // trade percentages - the latter blows up past 100% with more than a
@@ -62,8 +72,6 @@ async function AdminRunView() {
   // plain set difference rather than an embedded-resource filter - simpler to
   // get right than relying on PostgREST's left-join-then-filter-null semantics
   // inside a count-only (`head: true`) request.
-  const { data: placedPickIds } = await supabase.from('picks').select('id').eq('is_pick', true);
-  const { data: settledPickIds } = await supabase.from('settlements').select('pick_id');
   const settledSet = new Set((settledPickIds ?? []).map((s) => s.pick_id));
   const activePicksCount = (placedPickIds ?? []).filter((p) => !settledSet.has(p.id)).length;
 
@@ -72,8 +80,10 @@ async function AdminRunView() {
   let noPickRows: NoPickRow[] = [];
 
   if (latestRun) {
-    const { data: matches } = await supabase.from('matches').select('*').eq('run_id', latestRun.id);
-    const { data: runPicks } = await supabase.from('picks').select('*').eq('run_id', latestRun.id);
+    const [{ data: matches }, { data: runPicks }] = await Promise.all([
+      supabase.from('matches').select('*').eq('run_id', latestRun.id),
+      supabase.from('picks').select('*').eq('run_id', latestRun.id),
+    ]);
     const matchById = new Map((matches ?? []).map((m) => [m.id, m]));
     const placedPicks = (runPicks ?? []).filter((p) => p.is_pick);
     const rejectedPicks = (runPicks ?? []).filter((p) => !p.is_pick);
@@ -157,10 +167,12 @@ async function AdminRunView() {
 async function GuestRunView() {
   const supabase = await createClient();
 
-  const { data: demoRun } = await supabase.from('demo_run').select('*').limit(1).maybeSingle();
-  const { data: demoMatches } = await supabase.from('demo_match').select('*');
-  const { data: demoPicks } = await supabase.from('demo_pick').select('*');
-  const { data: trackRecordRows } = await supabase.from('global_track_record').select('*');
+  const [{ data: demoRun }, { data: demoMatches }, { data: demoPicks }, { data: trackRecordRows }] = await Promise.all([
+    supabase.from('demo_run').select('*').limit(1).maybeSingle(),
+    supabase.from('demo_match').select('*'),
+    supabase.from('demo_pick').select('*'),
+    supabase.from('global_track_record').select('*'),
+  ]);
 
   const summary = summarizeTrackRecord(
     (trackRecordRows ?? []).map(

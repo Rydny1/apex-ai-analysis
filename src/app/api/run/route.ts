@@ -43,9 +43,11 @@ export async function POST() {
   }
 
   // Max 3 runs per rolling 24h, counted from the database (not in-memory, so it
-  // survives across serverless invocations).
+  // survives across serverless invocations). Failed runs don't count - a run
+  // that died before scanning a single fixture (a bad API key, a provider
+  // outage) isn't a real attempt, and shouldn't burn one of three real slots.
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const { count } = await supabase.from('runs').select('id', { count: 'exact', head: true }).gte('started_at', since);
+  const { count } = await supabase.from('runs').select('id', { count: 'exact', head: true }).gte('started_at', since).neq('status', 'failed');
   if ((count ?? 0) >= config.limits.maxRunsPerDay) {
     return NextResponse.json({ error: `Max ${config.limits.maxRunsPerDay} runs per 24 hours reached.` }, { status: 429 });
   }
