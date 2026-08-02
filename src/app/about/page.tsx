@@ -12,9 +12,12 @@ export default function AboutPage() {
     <div className="min-h-full bg-canvas text-ink">
       <header className="border-b border-hair">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-6 py-4">
-          <Link href="/" className="text-[14px] font-medium tracking-[0.24em] text-ink">
-            A P E X
-          </Link>
+          <div className="flex items-center gap-5">
+            <BackLink />
+            <Link href="/" className="text-[14px] font-medium tracking-[0.24em] text-ink">
+              A P E X
+            </Link>
+          </div>
           <Link href="/login" className="text-[13px] text-ink-muted hover:text-ink">
             Sign in
           </Link>

@@ -14,6 +14,10 @@ import { Reveal } from '@/components/Reveal';
 // signed-in account sees on /tracking.
 export default async function HomePage() {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const signedIn = Boolean(user);
   const { data: rawRows } = await supabase.from('global_track_record').select('*').order('settled_at', { ascending: false });
 
   const rows: TrackRecordRow[] = (rawRows ?? []).map((r) => ({
@@ -49,8 +53,8 @@ export default async function HomePage() {
 
   return (
     <div className="bg-canvas text-ink">
-      <HomeNav />
-      <Hero picksThisWeek={picksThisWeek} />
+      <HomeNav signedIn={signedIn} />
+      <Hero picksThisWeek={picksThisWeek} signedIn={signedIn} />
       <MetricStrip
         hitRatePct={summary.hitRatePct}
         roiPct={summary.roiPct}

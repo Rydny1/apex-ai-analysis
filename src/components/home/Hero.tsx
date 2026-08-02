@@ -12,7 +12,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 const HEADLINE_LINE_1 = ['Football,', 'priced'];
 const HEADLINE_LINE_2 = 'before the market catches up.';
 
-export function Hero({ picksThisWeek }: { picksThisWeek: number }) {
+export function Hero({ picksThisWeek, signedIn }: { picksThisWeek: number; signedIn: boolean }) {
   const reducedMotion = useReducedMotion();
   const heroRef = useRef<HTMLDivElement>(null);
   const [trail, setTrail] = useState<{ x: number; y: number; id: number }[]>([]);
@@ -107,10 +107,10 @@ export function Hero({ picksThisWeek }: { picksThisWeek: number }) {
           className="mt-9 flex flex-wrap items-center gap-4"
         >
           <Link
-            href="/login"
+            href={signedIn ? '/run' : '/login'}
             className="min-h-[44px] rounded-md bg-ink px-6 py-3 text-[13px] font-semibold text-canvas transition-transform hover:scale-[1.02]"
           >
-            Try demo run →
+            {signedIn ? 'Go to dashboard →' : 'Try demo run →'}
           </Link>
           <a
             href="#how-it-works"

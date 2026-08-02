@@ -197,6 +197,18 @@ export default function LoginPage() {
         aria-hidden="true"
       />
 
+      {/* A minimal top nav - just an escape hatch back to the homepage, kept
+          deliberately quiet so it doesn't compete with the centered wordmark
+          below. No sign-in link here; that would be redundant on this page. */}
+      <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-6 py-5 sm:px-8">
+        <Link href="/" className="text-[13px] text-ink-faint transition-colors hover:text-ink-secondary">
+          ‹ Home
+        </Link>
+        <Link href="/about" target="_blank" rel="noopener noreferrer" className="text-[13px] text-ink-faint transition-colors hover:text-ink-secondary">
+          About
+        </Link>
+      </div>
+
       <main className="apex-login relative z-10 w-full max-w-[344px] px-6">
         <div className="text-center">
           <h1 className="tabular -mr-[0.34em] text-[38px] leading-none tracking-[0.34em] text-ink">

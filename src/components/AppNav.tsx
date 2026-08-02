@@ -10,6 +10,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { SignOutButton } from './SignOutButton';
 
 const LINKS = [
+  { href: '/', label: 'Home' },
   { href: '/run', label: 'Run' },
   { href: '/tracking', label: 'Tracking' },
   { href: '/history', label: 'History' },

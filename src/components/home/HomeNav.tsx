@@ -16,7 +16,7 @@ const LINKS = [
   { href: '/about', label: 'About' },
 ];
 
-export function HomeNav() {
+export function HomeNav({ signedIn }: { signedIn: boolean }) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -57,10 +57,10 @@ export function HomeNav() {
           </nav>
           <div className="flex items-center gap-4">
             <Link
-              href="/login"
+              href={signedIn ? '/run' : '/login'}
               className="hidden rounded-md border border-hair px-4 py-2 text-[12px] font-medium text-ink transition-colors hover:border-strong md:block"
             >
-              Sign in
+              {signedIn ? 'Dashboard' : 'Sign in'}
             </Link>
             <button
               type="button"
@@ -95,7 +95,7 @@ export function HomeNav() {
               </button>
             </div>
             <div className="flex flex-col px-6 py-4">
-              {[...LINKS, { href: '/login', label: 'Sign in' }].map((link, i) => (
+              {[...LINKS, signedIn ? { href: '/run', label: 'Dashboard' } : { href: '/login', label: 'Sign in' }].map((link, i) => (
                 <motion.div
                   key={link.href}
                   initial={{ opacity: 0, x: 24 }}
