@@ -1,35 +1,22 @@
 // The shared page frame for every authenticated screen: a plain header with the
-// wordmark, the three destinations, and sign-out. No sidebar, no decoration -
-// this is a tool, not a marketing site.
+// wordmark and the app's destinations, active-route underlined in accent. No
+// sidebar, no decoration - this is a tool, not a marketing site (that's the
+// homepage's job).
 import Link from 'next/link';
-import { SignOutButton } from './SignOutButton';
+import { AppNav } from './AppNav';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-full flex-col">
-      <header className="border-b border-line" style={{ borderBottomWidth: '0.5px' }}>
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-8 py-4">
-          <Link href="/run" className="text-[15px] font-medium tracking-[0.08em] text-ink">
-            APEX
+    <div className="flex min-h-full flex-col bg-canvas">
+      <header className="border-b border-hair">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 sm:px-8">
+          <Link href="/run" className="text-[14px] font-medium tracking-[0.24em] text-ink">
+            A P E X
           </Link>
-          <nav className="flex items-center gap-6 text-[13px] text-ink-muted">
-            <Link href="/run" className="hover:text-ink">
-              Run
-            </Link>
-            <Link href="/tracking" className="hover:text-ink">
-              Tracking
-            </Link>
-            <Link href="/history" className="hover:text-ink">
-              History
-            </Link>
-            <Link href="/about" className="hover:text-ink">
-              About
-            </Link>
-            <SignOutButton />
-          </nav>
+          <AppNav />
         </div>
       </header>
-      <main className="mx-auto w-full max-w-6xl flex-1 px-8 py-8">{children}</main>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-8 sm:px-8">{children}</main>
     </div>
   );
 }
