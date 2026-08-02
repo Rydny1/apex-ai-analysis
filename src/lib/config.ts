@@ -16,10 +16,12 @@ export const config = {
     modelEscalation: process.env.ANTHROPIC_MODEL_ESCALATION ?? 'claude-opus-5',
   },
   apiFootball: {
-    apiKey: process.env.RAPIDAPI_KEY ?? '',
-    baseUrl: 'https://api-football-v1.p.rapidapi.com/v3',
-    host: 'api-football-v1.p.rapidapi.com',
-    // Verified free tier as of this build (AUDIT.md item 8).
+    apiKey: process.env.API_FOOTBALL_KEY ?? '',
+    // The direct api-sports.io gateway, authenticated with x-apisports-key -
+    // not the RapidAPI marketplace listing of the same data, which uses a
+    // different host and header pair. Confirmed live against /status: Free
+    // plan, 100 requests/day, all endpoints.
+    baseUrl: 'https://v3.football.api-sports.io',
     dailyRequestBudget: 90, // headroom under the 100/day cap
   },
   footballDataOrg: {
@@ -75,7 +77,7 @@ export const config = {
 export function requiredServerConfig() {
   return {
     anthropicApiKey: required('ANTHROPIC_API_KEY'),
-    rapidApiKey: required('RAPIDAPI_KEY'),
+    apiFootballKey: required('API_FOOTBALL_KEY'),
     supabaseUrl: required('NEXT_PUBLIC_SUPABASE_URL'),
     supabaseServiceKey: required('SUPABASE_SERVICE_KEY'),
   };

@@ -1,7 +1,9 @@
-// Primary data client: API-Football via RapidAPI. Free tier is 100 requests/day
-// (AUDIT.md item 8) - every function here goes through the shared cache first and
-// checks the daily budget before making a real call, so a run never silently blows
-// past the free allowance.
+// Primary data client: API-Football, called directly against api-sports.io (not
+// through the RapidAPI marketplace - those are two separate gateways with
+// different auth headers for the same underlying data). Free tier is 100
+// requests/day (confirmed against /status: x-ratelimit-requests-limit: 100) -
+// every function here goes through the shared cache first and checks the daily
+// budget before making a real call, so a run never silently blows past that.
 import 'server-only';
 import { z } from 'zod';
 import { config } from '../config';
@@ -26,8 +28,7 @@ async function callApiFootball(path: string, params: Record<string, string>): Pr
 
   const response = await fetch(url, {
     headers: {
-      'x-rapidapi-key': config.apiFootball.apiKey,
-      'x-rapidapi-host': config.apiFootball.host,
+      'x-apisports-key': config.apiFootball.apiKey,
     },
   });
 

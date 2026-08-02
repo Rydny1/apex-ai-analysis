@@ -64,7 +64,7 @@ Environment variables needed:
 | Variable | Purpose |
 | --- | --- |
 | `ANTHROPIC_API_KEY` | Claude Sonnet 5 calls |
-| `RAPIDAPI_KEY` | API-Football (fixtures, lineups, odds) |
+| `API_FOOTBALL_KEY` | API-Football (fixtures, lineups, odds) - a direct key from dashboard.api-football.com, not RapidAPI |
 | `FOOTBALL_DATA_ORG_KEY` | football-data.org (standings, form) |
 | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Client-side Supabase |
 | `SUPABASE_SERVICE_KEY` | Server-only admin client (settlement cron, run persistence) |

@@ -92,7 +92,7 @@ export async function settleFinishedPicks(): Promise<{ settled: number; skipped:
 async function fetchFinalScore(fixtureId: string): Promise<{ home: number; away: number } | null> {
   const { config } = await import('../config');
   const response = await fetch(`${config.apiFootball.baseUrl}/fixtures?id=${fixtureId}`, {
-    headers: { 'x-rapidapi-key': config.apiFootball.apiKey, 'x-rapidapi-host': config.apiFootball.host },
+    headers: { 'x-apisports-key': config.apiFootball.apiKey },
   });
   if (!response.ok) return null;
 
