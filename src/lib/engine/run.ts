@@ -65,7 +65,13 @@ export async function runPipeline(onProgress: ProgressReporter = noopProgress): 
   const fixturesWithLeague: { fixture: NormalizedFixture; leagueCode: string }[] = [];
   const leagueCodes = Object.values(config.leagues);
   for (let i = 0; i < leagueCodes.length; i++) {
-    const [rawMatches, standingsRaw] = await Promise.all([fetchMatches(leagueCodes[i], dateFrom, dateTo), fetchStandings(leagueCodes[i])]);
+    // Sequential, not Promise.all: the client's own inter-call spacing (see
+    // football-data-org.ts) only serializes calls that actually await each
+    // other - two calls fired together both read the "last call" time before
+    // either updates it, so they go out almost together instead of 6s apart.
+    // That's exactly what triggered a real 429 from the API on the first run.
+    const rawMatches = await fetchMatches(leagueCodes[i], dateFrom, dateTo);
+    const standingsRaw = await fetchStandings(leagueCodes[i]);
     standingsByLeague.set(leagueCodes[i], standingsRaw);
     for (const raw of rawMatches) fixturesWithLeague.push({ fixture: normalizeFdoFixture(raw), leagueCode: leagueCodes[i] });
     await onProgress(2 + Math.round(((i + 1) / leagueCodes.length) * 13), 'Scanning fixtures');
