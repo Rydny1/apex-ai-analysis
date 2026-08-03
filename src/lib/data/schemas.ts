@@ -8,95 +8,10 @@
 // file from becoming a brittle, full re-implementation of someone else's API docs.
 import { z } from 'zod';
 
-// --- API-Football (v3, RapidAPI) -----------------------------------------------
-
-export const apiFootballFixtureSchema = z
-  .object({
-    fixture: z.object({
-      id: z.number(),
-      date: z.string(), // ISO timestamp
-      status: z.object({ short: z.string() }),
-      referee: z.string().nullable(),
-    }),
-    league: z.object({
-      id: z.number(),
-      name: z.string(),
-      round: z.string(),
-    }),
-    teams: z.object({
-      home: z.object({ id: z.number(), name: z.string() }),
-      away: z.object({ id: z.number(), name: z.string() }),
-    }),
-  })
-  .passthrough();
-
-export const apiFootballFixturesResponseSchema = z
-  .object({
-    response: z.array(apiFootballFixtureSchema),
-  })
-  .passthrough();
-
-export const apiFootballTeamStatsSchema = z
-  .object({
-    team: z.object({ id: z.number(), name: z.string() }),
-    fixtures: z.object({
-      played: z.object({ home: z.number(), away: z.number(), total: z.number() }),
-    }),
-    goals: z.object({
-      for: z.object({ total: z.object({ home: z.number(), away: z.number(), total: z.number() }) }),
-      against: z.object({ total: z.object({ home: z.number(), away: z.number(), total: z.number() }) }),
-    }),
-  })
-  .passthrough();
-
-export const apiFootballStandingRowSchema = z
-  .object({
-    rank: z.number(),
-    points: z.number(),
-    all: z.object({ played: z.number() }),
-    team: z.object({ id: z.number(), name: z.string() }),
-  })
-  .passthrough();
-
-export const apiFootballStandingsResponseSchema = z
-  .object({
-    response: z.array(
-      z.object({
-        league: z.object({
-          standings: z.array(z.array(apiFootballStandingRowSchema)),
-        }),
-      })
-    ),
-  })
-  .passthrough();
-
-export const apiFootballLineupSchema = z
-  .object({
-    team: z.object({ id: z.number(), name: z.string() }),
-    startXI: z.array(z.object({ player: z.object({ id: z.number(), name: z.string() }) })),
-  })
-  .passthrough();
-
-export const apiFootballLineupsResponseSchema = z
-  .object({
-    response: z.array(apiFootballLineupSchema),
-  })
-  .passthrough();
-
-export const apiFootballInjurySchema = z
-  .object({
-    player: z.object({ id: z.number(), name: z.string() }),
-    team: z.object({ id: z.number(), name: z.string() }),
-  })
-  .passthrough();
-
-export const apiFootballInjuriesResponseSchema = z
-  .object({
-    response: z.array(apiFootballInjurySchema),
-  })
-  .passthrough();
-
-// --- football-data.org (v4, fallback: fixtures/results/standings only) --------
+// --- football-data.org (v4) - primary and only live data source ---------------
+// API-Football's schemas were removed along with the client: its free plan has
+// no access to any current season on any endpoint (verified live), making it
+// unusable for this app regardless of code correctness.
 
 export const footballDataOrgMatchSchema = z
   .object({
@@ -120,6 +35,8 @@ export const footballDataOrgStandingRowSchema = z
     position: z.number(),
     points: z.number(),
     playedGames: z.number(),
+    goalsFor: z.number(),
+    goalsAgainst: z.number(),
     team: z.object({ id: z.number(), name: z.string() }),
   })
   .passthrough();

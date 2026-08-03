@@ -6,6 +6,7 @@
 // second data pull timed around kickoff.
 import 'server-only';
 import { createAdminClient } from '../supabase/admin';
+import { fetchMatchResult } from '../data/football-data-org';
 import { computeRoiPct, type SettlementResult } from './settlement';
 
 // Only O/U goals settlement is implemented, since that's the only market run.ts
@@ -90,15 +91,11 @@ export async function settleFinishedPicks(): Promise<{ settled: number; skipped:
 }
 
 async function fetchFinalScore(fixtureId: string): Promise<{ home: number; away: number } | null> {
-  const { config } = await import('../config');
-  const response = await fetch(`${config.apiFootball.baseUrl}/fixtures?id=${fixtureId}`, {
-    headers: { 'x-apisports-key': config.apiFootball.apiKey },
-  });
-  if (!response.ok) return null;
-
-  const json = (await response.json()) as { response: { fixture: { status: { short: string } }; goals: { home: number | null; away: number | null } }[] };
-  const fixture = json.response[0];
-  if (!fixture || fixture.fixture.status.short !== 'FT' || fixture.goals.home === null || fixture.goals.away === null) return null;
-
-  return { home: fixture.goals.home, away: fixture.goals.away };
+  try {
+    const result = await fetchMatchResult(fixtureId);
+    if (result.status !== 'FINISHED' || result.homeGoals === null || result.awayGoals === null) return null;
+    return { home: result.homeGoals, away: result.awayGoals };
+  } catch {
+    return null; // match not actually finished yet, or the API had no data - try again next cron run
+  }
 }

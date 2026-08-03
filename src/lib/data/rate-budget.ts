@@ -8,11 +8,12 @@ import 'server-only';
 import { createAdminClient } from '../supabase/admin';
 import { config } from '../config';
 
-export type Provider = 'api-football' | 'football-data-org' | 'odds-api';
+// football-data.org isn't tracked here - it self-limits per-minute (see its own
+// client) rather than a daily count, so there's nothing for this table to do
+// for it.
+export type Provider = 'odds-api';
 
 const DAILY_BUDGET: Record<Provider, number> = {
-  'api-football': config.apiFootball.dailyRequestBudget,
-  'football-data-org': 0, // rate-limited per-minute instead, not a daily count - see below
   'odds-api': config.oddsApi.monthlyCreditBudget,
 };
 

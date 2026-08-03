@@ -4,9 +4,9 @@
 // lib/engine/pipeline/* is a pure, independently-testable function.
 import 'server-only';
 import { config } from '../config';
-import { fetchFixturesForLeague, fetchStandings, fetchTeamStats } from '../data/api-football';
+import { fetchMatches, fetchStandings } from '../data/football-data-org';
 import { fetchFreshOdds } from '../data/odds';
-import { normalizeFixture, normalizeGoalsRate, normalizeOddsEvent, normalizeStandingsRow, buildTeamForm } from '../data/normalize';
+import { normalizeFdoFixture, normalizeFdoGoalsRate, normalizeFdoStandingsRow, normalizeOddsEvent, buildTeamForm } from '../data/normalize';
 import { deriveMotivationState } from './pipeline/motivation';
 import { triageMatch, capShortlist, type TriageResult } from './pipeline/s2-triage';
 import { formSignal, goalsRateDifferentialSignal, motivationSignal, meetsMinimumSignalCount } from './pipeline/signals';
@@ -42,8 +42,6 @@ interface MatchWorkingData {
   awayLineup: LineupInfo;
 }
 
-const SEASON = new Date().getFullYear(); // documented simplification: assumes the current calendar year is the active season
-
 export type ProgressReporter = (pct: number, stage: string) => Promise<void> | void;
 const noopProgress: ProgressReporter = () => {};
 
@@ -60,53 +58,54 @@ export async function runPipeline(onProgress: ProgressReporter = noopProgress): 
   const dateTo = windowEnd.toISOString().slice(0, 10);
 
   await onProgress(2, 'Scanning fixtures');
-  const allFixtures: NormalizedFixture[] = [];
-  const leagueIds = Object.values(config.leagues);
-  for (let i = 0; i < leagueIds.length; i++) {
-    const rawFixtures = await fetchFixturesForLeague(leagueIds[i], SEASON, dateFrom, dateTo);
-    for (const raw of rawFixtures) allFixtures.push(normalizeFixture(raw));
-    await onProgress(2 + Math.round(((i + 1) / leagueIds.length) * 13), 'Scanning fixtures');
+  // Standings fetched once per league here (not per fixture in S2 below) - both
+  // to avoid an N+1 call pattern and because football-data.org's free tier has
+  // no separate team-stats endpoint: goals rate is derived from these same rows.
+  const standingsByLeague = new Map<string, Awaited<ReturnType<typeof fetchStandings>>>();
+  const fixturesWithLeague: { fixture: NormalizedFixture; leagueCode: string }[] = [];
+  const leagueCodes = Object.values(config.leagues);
+  for (let i = 0; i < leagueCodes.length; i++) {
+    const [rawMatches, standingsRaw] = await Promise.all([fetchMatches(leagueCodes[i], dateFrom, dateTo), fetchStandings(leagueCodes[i])]);
+    standingsByLeague.set(leagueCodes[i], standingsRaw);
+    for (const raw of rawMatches) fixturesWithLeague.push({ fixture: normalizeFdoFixture(raw), leagueCode: leagueCodes[i] });
+    await onProgress(2 + Math.round(((i + 1) / leagueCodes.length) * 13), 'Scanning fixtures');
   }
+  const allFixtures = fixturesWithLeague.map((f) => f.fixture);
 
   // --- S2: TRIAGE --------------------------------------------------------------
   const enteredCandidates: (MatchWorkingData & { goalsRateDifferential: number })[] = [];
   let heldCount = 0;
 
-  for (let fixtureIndex = 0; fixtureIndex < allFixtures.length; fixtureIndex++) {
-    const fixture = allFixtures[fixtureIndex];
-    await onProgress(15 + Math.round((fixtureIndex / Math.max(1, allFixtures.length)) * 25), 'Triaging fixtures');
+  for (let fixtureIndex = 0; fixtureIndex < fixturesWithLeague.length; fixtureIndex++) {
+    const { fixture, leagueCode } = fixturesWithLeague[fixtureIndex];
+    await onProgress(15 + Math.round((fixtureIndex / Math.max(1, fixturesWithLeague.length)) * 25), 'Triaging fixtures');
     // A cold-start simplification: without a per-fixture odds/lineup pre-check
     // this early, S2 triages on what's cheaply knowable from the fixture alone
     // (kickoff time) and defers the odds/no-signal checks to right after the
-    // per-team stats pull below, since that's the earliest point real numbers
+    // standings lookup below, since that's the earliest point real numbers
     // exist to triage on.
     if (new Date(fixture.kickoff) < now) {
       droppedLog.push({ competition: fixture.competition, teams: `${fixture.home.name} vs ${fixture.away.name}`, reason: 'Already kicked off.' });
       continue;
     }
 
-    const [homeStatsRaw, awayStatsRaw, standingsRaw] = await Promise.all([
-      fetchTeamStats(Number(fixture.home.externalId), fixture.leagueId, SEASON),
-      fetchTeamStats(Number(fixture.away.externalId), fixture.leagueId, SEASON),
-      fetchStandings(fixture.leagueId, SEASON),
-    ]);
-
-    const homeGoalsRate = normalizeGoalsRate(homeStatsRaw, 'home');
-    const awayGoalsRate = normalizeGoalsRate(awayStatsRaw, 'away');
-    const goalsRateDifferential = Math.abs(
-      (homeGoalsRate.goalsForPerGame - homeGoalsRate.goalsAgainstPerGame) - (awayGoalsRate.goalsForPerGame - awayGoalsRate.goalsAgainstPerGame)
-    );
-
+    const standingsRaw = standingsByLeague.get(leagueCode) ?? [];
     const totalTeams = standingsRaw.length || 20;
     const homeRow = standingsRaw.find((r) => String(r.team.id) === fixture.home.externalId);
     const awayRow = standingsRaw.find((r) => String(r.team.id) === fixture.away.externalId);
     const totalGamesInSeason = (totalTeams - 1) * 2; // standard round-robin assumption, documented default
 
+    const homeGoalsRate = homeRow ? normalizeFdoGoalsRate(homeRow) : { goalsForPerGame: 1.3, goalsAgainstPerGame: 1.3, gamesPlayed: 0 };
+    const awayGoalsRate = awayRow ? normalizeFdoGoalsRate(awayRow) : { goalsForPerGame: 1.3, goalsAgainstPerGame: 1.3, gamesPlayed: 0 };
+    const goalsRateDifferential = Math.abs(
+      (homeGoalsRate.goalsForPerGame - homeGoalsRate.goalsAgainstPerGame) - (awayGoalsRate.goalsForPerGame - awayGoalsRate.goalsAgainstPerGame)
+    );
+
     const homeStandings = homeRow
-      ? normalizeStandingsRow(homeRow, totalTeams, totalGamesInSeason, totalTeams - 3, 4)
+      ? normalizeFdoStandingsRow(homeRow, totalTeams, totalGamesInSeason, totalTeams - 3, 4)
       : neutralStandings(totalTeams);
     const awayStandings = awayRow
-      ? normalizeStandingsRow(awayRow, totalTeams, totalGamesInSeason, totalTeams - 3, 4)
+      ? normalizeFdoStandingsRow(awayRow, totalTeams, totalGamesInSeason, totalTeams - 3, 4)
       : neutralStandings(totalTeams);
 
     const triage: TriageResult = triageMatch({

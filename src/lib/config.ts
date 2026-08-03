@@ -15,15 +15,10 @@ export const config = {
     modelDefault: process.env.ANTHROPIC_MODEL_DEFAULT ?? 'claude-sonnet-5',
     modelEscalation: process.env.ANTHROPIC_MODEL_ESCALATION ?? 'claude-opus-5',
   },
-  apiFootball: {
-    apiKey: process.env.API_FOOTBALL_KEY ?? '',
-    // The direct api-sports.io gateway, authenticated with x-apisports-key -
-    // not the RapidAPI marketplace listing of the same data, which uses a
-    // different host and header pair. Confirmed live against /status: Free
-    // plan, 100 requests/day, all endpoints.
-    baseUrl: 'https://v3.football.api-sports.io',
-    dailyRequestBudget: 90, // headroom under the 100/day cap
-  },
+  // API-Football's client was removed entirely - its free plan has no access
+  // to any current season, on any endpoint (verified live), so it can never
+  // return real data for this app regardless of key or code. football-data.org
+  // is now the sole live data source.
   footballDataOrg: {
     apiKey: process.env.FOOTBALL_DATA_ORG_KEY ?? '',
     baseUrl: 'https://api.football-data.org/v4',
@@ -64,28 +59,31 @@ export const config = {
     runMaxDurationSeconds: 300,
     staleRunGraceSeconds: 300,
   },
-  // Leagues covered by the spec, used to build the S1 fixture scan.
+  // Leagues covered, used to build the S1 fixture scan. football-data.org
+  // competition codes - switched from API-Football numeric IDs because
+  // API-Football's free plan has no access to any current season (verified
+  // live: "Free plans do not have access to this season, try from 2022 to
+  // 2024" on every endpoint), while football-data.org's free tier does cover
+  // current fixtures/standings. Trade-off: 4 leagues football-data.org
+  // doesn't offer on free tier (Scottish Premiership, Belgian Pro League,
+  // Europa League, Conference League) are dropped rather than half-covered
+  // through a second, mostly-dead provider.
   leagues: {
-    // API-Football numeric league IDs, current as of this build.
-    BUNDESLIGA: 78,
-    LA_LIGA: 140,
-    LIGUE_1: 61,
-    SERIE_A: 135,
-    EREDIVISIE: 88,
-    LIGA_PORTUGAL: 94,
-    SCOTTISH_PREMIERSHIP: 179,
-    BELGIAN_PRO_LEAGUE: 144,
-    CHAMPIONSHIP: 40,
-    UCL: 2,
-    UEL: 3,
-    UECL: 848,
+    BUNDESLIGA: 'BL1',
+    LA_LIGA: 'PD',
+    LIGUE_1: 'FL1',
+    SERIE_A: 'SA',
+    EREDIVISIE: 'DED',
+    LIGA_PORTUGAL: 'PPL',
+    CHAMPIONSHIP: 'ELC',
+    UCL: 'CL',
   },
 } as const;
 
 export function requiredServerConfig() {
   return {
     anthropicApiKey: required('ANTHROPIC_API_KEY'),
-    apiFootballKey: required('API_FOOTBALL_KEY'),
+    footballDataOrgKey: required('FOOTBALL_DATA_ORG_KEY'),
     supabaseUrl: required('NEXT_PUBLIC_SUPABASE_URL'),
     supabaseServiceKey: required('SUPABASE_SERVICE_KEY'),
   };

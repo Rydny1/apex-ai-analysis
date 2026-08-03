@@ -1,7 +1,8 @@
-// Fallback data client: football-data.org. Free tier is fixtures/results/standings
-// only - no lineups, no injuries (AUDIT.md item 3). Rate-limited at 10 requests
-// per minute rather than a daily count, so this file just spaces calls out instead
-// of tracking a budget in the database.
+// Primary data client: football-data.org. Free tier is fixtures/results/standings
+// only - no lineups, no injuries - but unlike API-Football's free tier (which has
+// no access to any current season at all, verified live), it does cover current
+// fixtures. Rate-limited at 10 requests per minute rather than a daily count, so
+// this file just spaces calls out instead of tracking a budget in the database.
 import 'server-only';
 import { config } from '../config';
 import { cached, CACHE_TTL_SECONDS } from './cache';
@@ -32,6 +33,16 @@ export async function fetchMatches(competitionCode: string, dateFrom: string, da
     const raw = await callFootballDataOrg(`/competitions/${competitionCode}/matches?dateFrom=${dateFrom}&dateTo=${dateTo}`);
     return footballDataOrgMatchesResponseSchema.parse(raw).matches;
   });
+}
+
+// For settlement: the final score of one specific match, by its football-data.org
+// match id. Not cached - only ever called once per pick, right when settling.
+export async function fetchMatchResult(matchId: string): Promise<{ status: string; homeGoals: number | null; awayGoals: number | null }> {
+  const raw = (await callFootballDataOrg(`/matches/${matchId}`)) as {
+    status: string;
+    score: { fullTime: { home: number | null; away: number | null } };
+  };
+  return { status: raw.status, homeGoals: raw.score.fullTime.home, awayGoals: raw.score.fullTime.away };
 }
 
 export async function fetchStandings(competitionCode: string) {

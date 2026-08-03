@@ -3,17 +3,9 @@
 // for" - so a missing capability turns into a clean market-disable or provider
 // fallback instead of the pipeline guessing at a value it doesn't have.
 export const CAPABILITIES = {
-  'api-football': {
-    fixtures: true,
-    standings: true,
-    lineups: true,
-    injuries: true,
-    refereeCardRates: false, // no structured stat on the free tier - AUDIT.md item 2
-    odds: false, // bundled behind a paid plan in practice - AUDIT.md item 1
-    // Every league the spec covers - the fallback (football-data.org) only has
-    // a subset, so this is the source of truth for "can we even scan this league."
-    leagues: ['BUN', 'LAL', 'L1', 'SA', 'ERE', 'LPT', 'SPL', 'BEL', 'ELC', 'UCL', 'UEL', 'UECL'] as const,
-  },
+  // API-Football's entry was removed - its free plan has no access to any
+  // current season, on any endpoint (verified live), so it's not a usable
+  // provider regardless of what this map claims about it.
   'football-data-org': {
     fixtures: true,
     standings: true,
