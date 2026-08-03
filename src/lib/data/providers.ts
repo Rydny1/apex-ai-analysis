@@ -14,7 +14,7 @@ export const CAPABILITIES = {
     refereeCardRates: false,
     odds: false,
     // football-data.org's free tier only covers a subset of the spec's leagues.
-    leagues: ['BUN', 'LAL', 'L1', 'SA', 'ERE', 'LPT', 'ELC', 'UCL'] as const,
+    leagues: ['BUN', 'LAL', 'L1', 'SA', 'ERE', 'LPT', 'ELC', 'UCL', 'PL', 'BSA'] as const,
   },
   'odds-api': {
     markets: ['1X2', 'O/U', 'AH'] as const, // reliable free-tier markets - AUDIT.md item 1

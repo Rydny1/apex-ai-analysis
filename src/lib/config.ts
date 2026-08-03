@@ -60,23 +60,21 @@ export const config = {
     staleRunGraceSeconds: 300,
   },
   // Leagues covered, used to build the S1 fixture scan. football-data.org
-  // competition codes - switched from API-Football numeric IDs because
-  // API-Football's free plan has no access to any current season (verified
-  // live: "Free plans do not have access to this season, try from 2022 to
-  // 2024" on every endpoint), while football-data.org's free tier does cover
-  // current fixtures/standings. Trade-off: 4 leagues football-data.org
-  // doesn't offer on free tier (Scottish Premiership, Belgian Pro League,
-  // Europa League, Conference League) are dropped rather than half-covered
-  // through a second, mostly-dead provider.
+  // competition codes - 10 of the 12 on the free plan. World Cup and Euro
+  // Championship excluded: both are once-every-4-years national-team
+  // tournaments, not a weekly domestic schedule this pipeline's "scan the
+  // coming 7 days" model fits.
   leagues: {
+    UCL: 'CL',
     BUNDESLIGA: 'BL1',
+    EREDIVISIE: 'DED',
+    BRAZIL_SERIE_A: 'BSA',
     LA_LIGA: 'PD',
     LIGUE_1: 'FL1',
-    SERIE_A: 'SA',
-    EREDIVISIE: 'DED',
-    LIGA_PORTUGAL: 'PPL',
     CHAMPIONSHIP: 'ELC',
-    UCL: 'CL',
+    LIGA_PORTUGAL: 'PPL',
+    SERIE_A: 'SA',
+    PREMIER_LEAGUE: 'PL',
   },
 } as const;
 

@@ -17,6 +17,8 @@ const LEAGUE_CODE_TO_BASE_RATE_KEY: Record<string, string> = {
   PPL: 'LPT',
   ELC: 'SA', // Championship: no dedicated base-rate row in the spec's table - SA is the nearest published rate.
   CL: 'UCL',
+  PL: 'LAL', // Premier League: no dedicated row either - LAL is the nearest published top-5-league rate.
+  BSA: 'SA', // Brazil Serie A: same reasoning, nearest published rate rather than an invented number.
 };
 
 const EUROPEAN_LEAGUE_CODES = new Set(['CL']);
