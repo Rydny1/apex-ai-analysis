@@ -1,8 +1,17 @@
+<div align="center">
+
 # APEX
 
+**Football, priced before the market catches up.**
+
+[Live demo](https://apex-ai-analysis.vercel.app)
+
+</div>
+
+![APEX home](docs/images/home.png)
+
 Pre-match football analysis with the discipline of a value-betting model. Built as a personal
-project to test whether a strict edge-based betting system can produce a positive closing-line
-value signal over a 20+ pick sample.
+project to test whether a strict edge-based system can beat the closing line.
 
 ## What it does
 
@@ -40,16 +49,13 @@ not personally pay for the compute. So:
 - Supabase (Postgres + Auth + RLS)
 - Anthropic Claude Sonnet 5 (with prompt caching + Message Batches)
 - Deterministic TypeScript for the pipeline math
-- Free-tier data via API-Football and football-data.org
+- Data from API-Football and football-data.org (both keys required)
 - Framer Motion for the interface's motion system, Recharts for the track-record chart
 - Deployed on Vercel
 
 ## Cost profile
 
-About $3 to $5/month at 4 runs of ~10 matches each. Prompt caching cuts the static APEX rules
-cost by 90%. Batch mode halves the reasoning tokens. Web search stays under $1/month. Real runs
-are restricted to one admin account, so that number doesn't move regardless of how many people
-visit the site.
+A live run costs roughly $0.25. Real runs are restricted to one admin account, so visitor traffic can't move that number.
 
 ## Local development
 
@@ -70,10 +76,8 @@ Environment variables needed:
 | `SUPABASE_SERVICE_KEY` | Server-only admin client (settlement cron, run persistence) |
 | `ADMIN_EMAIL` | The one account allowed to trigger real runs |
 | `CRON_SECRET` | Authenticates Vercel's daily settlement cron hit |
-
-## Live
-
-https://apex-ai-analysis.vercel.app
+| `ODDS_API_KEY` | Optional odds fallback |
+| `ANTHROPIC_MODEL_DEFAULT`, `ANTHROPIC_MODEL_ESCALATION` | Optional model overrides |
 
 ## Author
 
